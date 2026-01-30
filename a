@@ -1,21 +1,27 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Player = Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Root = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
 local Active = false
 local Speed = 29
 local BV = nil
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "Schmeckt_Speed"
+gui.Name = "VelocityGUI"
 gui.ResetOnSpawn = false
 gui.Parent = Player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 130)
-frame.Position = UDim2.new(0, 20, 0.5, -65)
+frame.Size = UDim2.new(0, 180, 0, 120)
+frame.Position = UDim2.new(1, -190, 1, -130)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -26,72 +32,96 @@ stroke.Color = Color3.fromRGB(138, 43, 226)
 stroke.Thickness = 2
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 25)
 title.BackgroundTransparency = 1
-title.Text = "SPEED BOOSTER"
+title.Text = "Speed Boost On Steal"
 title.TextColor3 = Color3.fromRGB(138, 43, 226)
-title.Font = Enum.Font.GothamBlack
-title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.TextSize = 12
 title.Parent = frame
 
 local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0, 100, 0, 30)
-speedBox.Position = UDim2.new(0.5, -50, 0, 40)
+speedBox.Size = UDim2.new(0, 80, 0, 30)
+speedBox.Position = UDim2.new(0.5, -40, 0, 30)
 speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 speedBox.Text = tostring(Speed)
 speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedBox.Font = Enum.Font.GothamBold
+speedBox.Font = Enum.Font.Gotham
 speedBox.TextSize = 16
 speedBox.Parent = frame
 Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", speedBox).Color = Color3.fromRGB(138, 43, 226)
 
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, 0, 0, 20)
-status.Position = UDim2.new(0, 0, 0, 80)
+status.Position = UDim2.new(0, 0, 0, 65)
 status.BackgroundTransparency = 1
-status.Text = "READY"
-status.TextColor3 = Color3.fromRGB(100, 255, 100)
+status.Text = "Ready"
+status.TextColor3 = Color3.fromRGB(138, 43, 226)
 status.Font = Enum.Font.GothamBold
 status.TextSize = 14
 status.Parent = frame
 
+local durationLabel = Instance.new("TextLabel")
+durationLabel.Size = UDim2.new(1, 0, 0, 20)
+durationLabel.Position = UDim2.new(0, 0, 0, 90)
+durationLabel.BackgroundTransparency = 1
+durationLabel.Text = "Infinite Duration"
+durationLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
+durationLabel.Font = Enum.Font.Gotham
+durationLabel.TextSize = 11
+durationLabel.Parent = frame
+
 speedBox.FocusLost:Connect(function()
     local num = tonumber(speedBox.Text)
-    if num then Speed = num else speedBox.Text = tostring(Speed) end
+    if num then
+        Speed = num
+    else
+        speedBox.Text = tostring(Speed)
+    end
 end)
 
 local function StartBoost()
     if Active then return end
     Active = true
-    status.Text = "ACTIVE!"
-    status.TextColor3 = Color3.fromRGB(138, 43, 226)
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    task.delay(1, function()
-        Active = false
-        status.Text = "READY"
-        status.TextColor3 = Color3.fromRGB(100, 255, 100)
-        stroke.Color = Color3.fromRGB(138, 43, 226)
-    end)
+    status.Text = "BOOST"
+    status.TextColor3 = Color3.fromRGB(180, 100, 255)
+    stroke.Color = Color3.fromRGB(180, 100, 255)
 end
 
 ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    if player == Player then
-        local txt = (prompt.ActionText .. prompt.Name .. prompt.ObjectText):lower()
-        if txt:find("steal") then StartBoost() end
+    if player ~= Player then return end
+    local txt = (prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")
+    if txt:lower():find("steal") then
+        StartBoost()
+    end
+end)
+
+ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt, player)
+    if player ~= Player then return end
+    local txt = (prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")
+    if txt:lower():find("steal") then
+        StartBoost()
+    end
+end)
+
+Player.PlayerGui.DescendantAdded:Connect(function(desc)
+    if desc:IsA("TextLabel") or desc:IsA("TextButton") then
+        local text = desc.Text
+        if text and text:lower():find("you stole") then
+            StartBoost()
+        end
     end
 end)
 
 RunService.Heartbeat:Connect(function()
-    local Char = Player.Character
-    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-    local Hum = Char and Char:FindFirstChild("Humanoid")
-    if Active and Root and Hum then
+    if Active and Root and Humanoid then
         if not BV then
             BV = Instance.new("BodyVelocity")
             BV.MaxForce = Vector3.new(1e5, 0, 1e5)
             BV.Parent = Root
         end
-        local dir = Hum.MoveDirection
+        local dir = Humanoid.MoveDirection
         BV.Velocity = dir.Magnitude > 0 and dir * Speed or Vector3.zero
     elseif BV then
         BV:Destroy()
@@ -99,20 +129,13 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-local dragging, dragStart, startPos
-frame.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = i.Position
-        startPos = frame.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(i)
-    if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = i.Position - dragStart
-        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+Player.CharacterAdded:Connect(function(char)
+    Character = char
+    Root = char:WaitForChild("HumanoidRootPart")
+    Humanoid = char:WaitForChild("Humanoid")
+    Active = false
+    status.Text = "Ready"
+    status.TextColor3 = Color3.fromRGB(138, 43, 226)
+    stroke.Color = Color3.fromRGB(138, 43, 226)
+    if BV then BV:Destroy() BV = nil end
 end)
