@@ -1,18 +1,16 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
 
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Root = Character:WaitForChild("HumanoidRootPart")
 local Humanoid = Character:WaitForChild("Humanoid")
 
+local Enabled = true
 local Active = false
-local Speed = 29
-local BV = nil
+local Speed = 29.2
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "VelocityGUI"
@@ -20,9 +18,9 @@ gui.ResetOnSpawn = false
 gui.Parent = Player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 180, 0, 120)
-frame.Position = UDim2.new(1, -190, 1, -130)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Size = UDim2.new(0, 180, 0, 145)
+frame.Position = UDim2.new(1, -190, 1, -155)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 
@@ -32,80 +30,154 @@ stroke.Color = Color3.fromRGB(138, 43, 226)
 stroke.Thickness = 2
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 25)
+title.Size = UDim2.new(1, 0, 0, 22)
 title.BackgroundTransparency = 1
 title.Text = "Speed Boost On Steal"
 title.TextColor3 = Color3.fromRGB(138, 43, 226)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 12
+title.TextSize = 11
 title.Parent = frame
 
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0, 50, 0, 20)
+speedLabel.Position = UDim2.new(0, 15, 0, 28)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed:"
+speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextSize = 11
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = frame
+
 local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0, 80, 0, 30)
-speedBox.Position = UDim2.new(0.5, -40, 0, 30)
-speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+speedBox.Size = UDim2.new(0, 60, 0, 22)
+speedBox.Position = UDim2.new(0, 70, 0, 27)
+speedBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 speedBox.Text = tostring(Speed)
 speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedBox.Font = Enum.Font.Gotham
-speedBox.TextSize = 16
+speedBox.TextSize = 12
 speedBox.Parent = frame
-Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", speedBox).Color = Color3.fromRGB(138, 43, 226)
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 4)
+Instance.new("UIStroke", speedBox).Color = Color3.fromRGB(80, 80, 80)
 
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, 0, 0, 20)
-status.Position = UDim2.new(0, 0, 0, 65)
+status.Position = UDim2.new(0, 0, 0, 55)
 status.BackgroundTransparency = 1
 status.Text = "Ready"
-status.TextColor3 = Color3.fromRGB(138, 43, 226)
+status.TextColor3 = Color3.fromRGB(100, 100, 100)
 status.Font = Enum.Font.GothamBold
 status.TextSize = 14
 status.Parent = frame
 
-local durationLabel = Instance.new("TextLabel")
-durationLabel.Size = UDim2.new(1, 0, 0, 20)
-durationLabel.Position = UDim2.new(0, 0, 0, 90)
-durationLabel.BackgroundTransparency = 1
-durationLabel.Text = "Infinite Duration"
-durationLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
-durationLabel.Font = Enum.Font.Gotham
-durationLabel.TextSize = 11
-durationLabel.Parent = frame
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 160, 0, 25)
+toggleBtn.Position = UDim2.new(0.5, -80, 0, 80)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+toggleBtn.Text = "ENABLED"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 10
+toggleBtn.Parent = frame
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
+local toggleStroke = Instance.new("UIStroke", toggleBtn)
+toggleStroke.Color = Color3.fromRGB(180, 100, 255)
+
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(0, 160, 0, 25)
+stopBtn.Position = UDim2.new(0.5, -80, 0, 110)
+stopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+stopBtn.Text = "STOP BOOST"
+stopBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+stopBtn.Font = Enum.Font.GothamBold
+stopBtn.TextSize = 10
+stopBtn.Parent = frame
+Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 4)
+local stopStroke = Instance.new("UIStroke", stopBtn)
+stopStroke.Color = Color3.fromRGB(60, 60, 60)
 
 speedBox.FocusLost:Connect(function()
     local num = tonumber(speedBox.Text)
     if num then
         Speed = num
+        speedBox.Text = tostring(Speed)
     else
         speedBox.Text = tostring(Speed)
     end
 end)
 
+local function UpdateToggleVisual()
+    if Enabled then
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        toggleBtn.Text = "ENABLED"
+        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleStroke.Color = Color3.fromRGB(180, 100, 255)
+    else
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        toggleBtn.Text = "DISABLED"
+        toggleBtn.TextColor3 = Color3.fromRGB(100, 100, 100)
+        toggleStroke.Color = Color3.fromRGB(60, 60, 60)
+        Active = false
+        status.Text = "Disabled"
+        status.TextColor3 = Color3.fromRGB(80, 80, 80)
+        stroke.Color = Color3.fromRGB(60, 60, 60)
+    end
+end
+
 local function StartBoost()
+    if not Enabled then return end
     if Active then return end
     Active = true
-    status.Text = "BOOST"
-    status.TextColor3 = Color3.fromRGB(180, 100, 255)
+    status.Text = "BOOST ACTIVE"
+    status.TextColor3 = Color3.fromRGB(138, 43, 226)
     stroke.Color = Color3.fromRGB(180, 100, 255)
+    stopBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    stopStroke.Color = Color3.fromRGB(200, 80, 80)
 end
+
+local function StopBoost()
+    Active = false
+    if Enabled then
+        status.Text = "Ready"
+        status.TextColor3 = Color3.fromRGB(100, 100, 100)
+        stroke.Color = Color3.fromRGB(138, 43, 226)
+    end
+    stopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    stopBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    stopStroke.Color = Color3.fromRGB(60, 60, 60)
+end
+
+toggleBtn.MouseButton1Click:Connect(function()
+    Enabled = not Enabled
+    UpdateToggleVisual()
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+    StopBoost()
+end)
 
 ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
     if player ~= Player then return end
-    local txt = (prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")
-    if txt:lower():find("steal") then
+    if not Enabled then return end
+    local txt = ((prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")):lower()
+    if txt:find("steal") then
         StartBoost()
     end
 end)
 
 ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt, player)
     if player ~= Player then return end
-    local txt = (prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")
-    if txt:lower():find("steal") then
+    if not Enabled then return end
+    local txt = ((prompt.ActionText or "") .. (prompt.Name or "") .. (prompt.ObjectText or "")):lower()
+    if txt:find("steal") then
         StartBoost()
     end
 end)
 
 Player.PlayerGui.DescendantAdded:Connect(function(desc)
+    if not Enabled then return end
     if desc:IsA("TextLabel") or desc:IsA("TextButton") then
         local text = desc.Text
         if text and text:lower():find("you stole") then
@@ -114,28 +186,55 @@ Player.PlayerGui.DescendantAdded:Connect(function(desc)
     end
 end)
 
+local frameSkip = 0
+
 RunService.Heartbeat:Connect(function()
-    if Active and Root and Humanoid then
-        if not BV then
-            BV = Instance.new("BodyVelocity")
-            BV.MaxForce = Vector3.new(1e5, 0, 1e5)
-            BV.Parent = Root
-        end
-        local dir = Humanoid.MoveDirection
-        BV.Velocity = dir.Magnitude > 0 and dir * Speed or Vector3.zero
-    elseif BV then
-        BV:Destroy()
-        BV = nil
-    end
+    if not Active then return end
+    if not Root or not Root.Parent then return end
+    if not Humanoid or Humanoid.Health <= 0 then return end
+    
+    local dir = Humanoid.MoveDirection
+    if dir.Magnitude < 0.1 then return end
+    
+    frameSkip = frameSkip + 1
+    if frameSkip < 2 then return end
+    frameSkip = 0
+    
+    local randomOffset = (math.random() - 0.5) * 0.4
+    local currentSpeed = Speed + randomOffset
+    
+    Root.AssemblyLinearVelocity = Vector3.new(
+        dir.X * currentSpeed,
+        Root.AssemblyLinearVelocity.Y,
+        dir.Z * currentSpeed
+    )
 end)
 
 Player.CharacterAdded:Connect(function(char)
     Character = char
     Root = char:WaitForChild("HumanoidRootPart")
     Humanoid = char:WaitForChild("Humanoid")
-    Active = false
-    status.Text = "Ready"
-    status.TextColor3 = Color3.fromRGB(138, 43, 226)
-    stroke.Color = Color3.fromRGB(138, 43, 226)
-    if BV then BV:Destroy() BV = nil end
+    StopBoost()
+end)
+
+local dragging, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
 end)
